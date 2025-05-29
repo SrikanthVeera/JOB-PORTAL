@@ -158,6 +158,13 @@ def index():
         'status': 'OK',
         'version': '1.0.0'
     })
+
+@app.route('/test', methods=['GET'])
+def test():
+    return jsonify({
+        'message': 'Test endpoint is working',
+        'status': 'OK'
+    })
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -826,5 +833,6 @@ def uploads_count():
 
 
 if __name__ == '__main__':
-    port = os.environ.get('PORT', 10000)
+    port = os.environ.get('PORT', 8080)
     app.run(host='0.0.0.0', port=int(port), debug=False)
+    print(f"Running on port {port}")
