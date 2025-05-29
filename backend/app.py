@@ -11,13 +11,10 @@ import json
 # Initialize Flask app
 app = Flask(__name__)
 
-# Enable CORS
+# Enable CORS - Allow all origins for testing
 CORS(app, supports_credentials=True, resources={
     r"/*": {
-        "origins": [
-            "http://localhost:3000",
-            "https://job-portal-3e7h.vercel.app"
-        ],
+        "origins": "*",
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
@@ -153,11 +150,39 @@ with app.app_context():
 # Routes
 @app.route('/', methods=['GET'])
 def index():
-    return jsonify({
-        'message': 'Job Portal API is running',
-        'status': 'OK',
-        'version': '1.0.0'
-    })
+    # Check if the request accepts HTML
+    if 'text/html' in request.headers.get('Accept', ''):
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Job Portal API</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+                h1 { color: #333; }
+                .success { color: green; }
+                .info { color: blue; }
+                pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+                a { color: #0066cc; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+            </style>
+        </head>
+        <body>
+            <h1>Job Portal API</h1>
+            <p class="success">✅ API is running!</p>
+            <p>This is the backend API for the Job Portal application.</p>
+            <p>For more detailed testing, visit <a href="/railway-test">/railway-test</a></p>
+            <p>API Version: 1.0.0</p>
+        </body>
+        </html>
+        """
+    else:
+        # Return JSON for API clients
+        return jsonify({
+            'message': 'Job Portal API is running',
+            'status': 'OK',
+            'version': '1.0.0'
+        })
 
 @app.route('/test', methods=['GET'])
 def test():
@@ -165,6 +190,52 @@ def test():
         'message': 'Test endpoint is working',
         'status': 'OK'
     })
+
+@app.route('/railway-test', methods=['GET'])
+def railway_test():
+    # Return a simple HTML page for testing
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Railway Test</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+            h1 { color: #333; }
+            .success { color: green; }
+            .info { color: blue; }
+            pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+        </style>
+    </head>
+    <body>
+        <h1>Railway Test Page</h1>
+        <p class="success">✅ If you can see this page, your Flask app is running correctly!</p>
+        <p class="info">Server Information:</p>
+        <pre>
+Flask Version: {flask_version}
+Python Version: {python_version}
+Environment: {environment}
+Port: {port}
+        </pre>
+        <p>Try these endpoints:</p>
+        <ul>
+            <li><a href="/test">/test</a> - JSON test endpoint</li>
+            <li><a href="/api/jobs">/api/jobs</a> - Jobs API endpoint</li>
+            <li><a href="/api/companies">/api/companies</a> - Companies API endpoint</li>
+        </ul>
+    </body>
+    </html>
+    """
+    import flask
+    import sys
+    import platform
+    
+    return html.format(
+        flask_version=flask.__version__,
+        python_version=sys.version,
+        environment=os.environ.get('RAILWAY_ENVIRONMENT', 'Unknown'),
+        port=os.environ.get('PORT', '8080')
+    )
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
