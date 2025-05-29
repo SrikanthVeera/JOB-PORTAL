@@ -832,7 +832,8 @@ def uploads_count():
         return jsonify({'error': str(e)}), 500
 
 
+# This is needed for Railway deployment
+port = os.environ.get('PORT', 8080)
 if __name__ == '__main__':
-    port = os.environ.get('PORT', 8080)
     app.run(host='0.0.0.0', port=int(port), debug=False)
     print(f"Running on port {port}")
