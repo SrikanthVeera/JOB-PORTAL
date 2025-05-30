@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_cors import CORS
@@ -9,12 +9,12 @@ import pymysql
 import json
 
 # Initialize Flask app
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 
-# Enable CORS - Allow all origins for testing
+# Enable CORS - Allow specific origins
 CORS(app, supports_credentials=True, resources={
     r"/*": {
-        "origins": "*",
+        "origins": ["https://job-portal-frontend.onrender.com", "http://localhost:3000"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
@@ -27,10 +27,19 @@ load_dotenv()
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///jobportal.db')
+
+# Handle PostgreSQL URL format for Render.com
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///jobportal.db')
+# Render.com provides PostgreSQL URLs starting with postgres://, but SQLAlchemy requires postgresql://
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key')
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30)  # Increased to 30 days for testing
+app.config['JWT_HEADER_TYPE'] = 'Bearer'
+app.config['JWT_HEADER_NAME'] = 'Authorization'
 app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', 'uploads')
 
 # Initialize extensions
@@ -191,6 +200,83 @@ def test():
         'status': 'OK'
     })
 
+@app.route('/login-test', methods=['GET'])
+def login_test():
+    return render_template('login-test.html')
+
+@app.route('/api/token-test', methods=['GET'])
+def token_test():
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header:
+        return jsonify({
+            'message': 'No Authorization header found',
+            'status': 'error',
+            'has_token': False
+        }), 401
+    
+    try:
+        # Extract token from Bearer format
+        token = auth_header.split(' ')[1] if ' ' in auth_header else auth_header
+        
+        # Try to decode the token
+        from flask_jwt_extended import decode_token
+        try:
+            decoded = decode_token(token)
+            return jsonify({
+                'message': 'Token received and decoded successfully',
+                'status': 'OK',
+                'has_token': True,
+                'token_length': len(token),
+                'decoded': {
+                    'identity': decoded.get('sub'),
+                    'exp': decoded.get('exp'),
+                    'iat': decoded.get('iat'),
+                    'type': decoded.get('type')
+                }
+            })
+        except Exception as decode_error:
+            return jsonify({
+                'message': f'Token received but failed to decode: {str(decode_error)}',
+                'status': 'error',
+                'has_token': True,
+                'token_length': len(token)
+            }), 401
+    except Exception as e:
+        return jsonify({
+            'message': f'Error processing token: {str(e)}',
+            'status': 'error',
+            'has_token': True
+        }), 500
+
+@app.route('/api/debug-profile', methods=['GET'])
+def debug_profile():
+    """Debug endpoint that doesn't require JWT authentication"""
+    auth_header = request.headers.get('Authorization', '')
+    token_info = "No token provided"
+    
+    if auth_header:
+        try:
+            token = auth_header.split(' ')[1] if ' ' in auth_header else auth_header
+            token_info = f"Token received (length: {len(token)})"
+        except Exception as e:
+            token_info = f"Error extracting token: {str(e)}"
+    
+    return jsonify({
+        'message': 'Debug profile endpoint',
+        'status': 'OK',
+        'token_info': token_info,
+        'sample_user': {
+            'id': 1,
+            'email': 'sample@example.com',
+            'full_name': 'Sample User',
+            'phone': '123-456-7890',
+            'location': 'Sample Location',
+            'is_admin': False,
+            'role': 'user',
+            'resume_headline': 'Sample Resume Headline'
+        }
+    })
+
 @app.route('/railway-test', methods=['GET'])
 def railway_test():
     # Return a simple HTML page for testing
@@ -234,7 +320,7 @@ Port: {port}
         flask_version=flask.__version__,
         python_version=sys.version,
         environment=os.environ.get('RAILWAY_ENVIRONMENT', 'Unknown'),
-        port=os.environ.get('PORT', '8080')
+        port='5000'
     )
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -288,10 +374,18 @@ def login():
                 user.is_admin = True
                 user.role = 'Super Admin'
                 db.session.commit()
-            access_token = create_access_token(identity={'id': user.id, 'is_admin': True})
+            
+            # Create identity object for JWT
+            identity = {'id': user.id, 'is_admin': True, 'role': 'Super Admin'}
+            access_token = create_access_token(identity=identity)
+            
+            print(f"Admin login successful. Token created for user ID: {user.id}")
+            
             return jsonify({
                 'access_token': access_token,
-                'is_admin': True
+                'is_admin': True,
+                'user_id': user.id,
+                'message': 'Admin login successful'
             }), 200
 
         # For all other users, do NOT allow admin login
@@ -299,14 +393,20 @@ def login():
         user = User.query.filter_by(email=data['email']).first()
         if user and check_password_hash(user.password, data['password']):
             # Force is_admin to False for all except the admin email
-            access_token = create_access_token(identity={
+            identity = {
                 'id': user.id,
                 'is_admin': False,
                 'role': 'user'
-            })
+            }
+            access_token = create_access_token(identity=identity)
+            
+            print(f"User login successful. Token created for user ID: {user.id}")
+            
             return jsonify({
                 'access_token': access_token,
-                'is_admin': False
+                'is_admin': False,
+                'user_id': user.id,
+                'message': 'User login successful'
             }), 200
 
         print("Invalid credentials")
@@ -546,20 +646,33 @@ def admin_login():
 @app.route('/api/profile', methods=['GET'])
 @jwt_required()
 def get_profile():
-    current_user = get_jwt_identity()
-    user = User.query.get(current_user['id'])
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    return jsonify({
-        'id': user.id,
-        'email': user.email,
-        'full_name': user.full_name,
-        'phone': user.phone,
-        'location': user.location,
-        'is_admin': user.is_admin,
-        'role': user.role,
-        'resume_headline': user.resume_headline
-    })
+    try:
+        current_user = get_jwt_identity()
+        print(f"Profile request for user: {current_user}")
+        
+        if not isinstance(current_user, dict) or 'id' not in current_user:
+            print(f"Invalid user identity format: {current_user}")
+            return jsonify({'error': 'Invalid user identity format'}), 400
+        
+        user = User.query.get(current_user['id'])
+        if not user:
+            print(f"User not found with ID: {current_user['id']}")
+            return jsonify({'error': 'User not found'}), 404
+        
+        print(f"Profile found for user ID: {user.id}, email: {user.email}")
+        return jsonify({
+            'id': user.id,
+            'email': user.email,
+            'full_name': user.full_name,
+            'phone': user.phone,
+            'location': user.location,
+            'is_admin': user.is_admin,
+            'role': user.role,
+            'resume_headline': user.resume_headline
+        })
+    except Exception as e:
+        print(f"Exception in get_profile: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/profile', methods=['PUT'])
 @jwt_required()
@@ -903,8 +1016,7 @@ def uploads_count():
         return jsonify({'error': str(e)}), 500
 
 
-# This is needed for Railway deployment
-port = os.environ.get('PORT', 8080)
+# Run the app on port 5000
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(port), debug=False)
-    print(f"Running on port {port}")
+    app.run(host='0.0.0.0', port=5000, debug=True)
+    print("Running on port 5000")

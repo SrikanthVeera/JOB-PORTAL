@@ -1,23 +1,8 @@
 import axios from 'axios';
 
-// Try different possible URLs for the backend
-const POSSIBLE_URLS = [
-  process.env.REACT_APP_API_URL,
-  'https://web-production-a1cb2.up.railway.app',
-  'https://web-production-a1cb2.railway.app',
-  'http://web-production-a1cb2.up.railway.app',
-  'http://web-production-a1cb2.railway.app'
-];
-
-// Filter out undefined URLs
-const VALID_URLS = POSSIBLE_URLS.filter(url => url);
-
-// Log all possible URLs we're trying
-console.log('Trying these backend URLs:', VALID_URLS);
-
-// Use the first URL by default
-const API_URL = VALID_URLS[0];
-console.log('Initially using API URL:', API_URL);
+// Use environment variable for API URL or fallback to local development
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+console.log('Using API URL:', API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
@@ -44,28 +29,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-    
-    // If the error is due to a connection issue and we haven't tried all URLs
-    if (error.message.includes('Network Error') && !originalRequest._retryCount) {
-      originalRequest._retryCount = originalRequest._retryCount || 0;
-      
-      // Try the next URL if available
-      if (originalRequest._retryCount < VALID_URLS.length - 1) {
-        originalRequest._retryCount++;
-        const nextUrl = VALID_URLS[originalRequest._retryCount];
-        console.log(`Trying next API URL: ${nextUrl}`);
-        
-        // Update the baseURL for this request
-        originalRequest.baseURL = nextUrl;
-        
-        // Also update the default baseURL for future requests
-        api.defaults.baseURL = nextUrl;
-        
-        return api(originalRequest);
-      }
-    }
-    
+    console.error('API Error:', error.message);
     return Promise.reject(error);
   }
 );

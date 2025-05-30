@@ -39,8 +39,7 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import LanguageIcon from '@mui/icons-material/Language';
-
-const API_BASE_URL = 'http://localhost:5000/api';
+import api from '../api';
 
 export default function UserProfileForm() {
   const navigate = useNavigate();
@@ -121,34 +120,39 @@ export default function UserProfileForm() {
         navigate('/login');
         return;
       }
-      const headers = { 'Authorization': `Bearer ${token}` };
-      // Fetch profile
-      const profileRes = await fetch(`${API_BASE_URL}/profile`, { headers });
-      if (profileRes.status === 401) { navigate('/login'); return; }
-      const profileData = await profileRes.json();
-      setProfile(profileData);
-      // Fetch educations
-      const educationsRes = await fetch(`${API_BASE_URL}/profile/education`, { headers });
-      if (educationsRes.status === 401) { navigate('/login'); return; }
-      const educationsData = await educationsRes.json();
-      setEducations(educationsData);
-      // Fetch experiences
-      const experiencesRes = await fetch(`${API_BASE_URL}/profile/experience`, { headers });
-      if (experiencesRes.status === 401) { navigate('/login'); return; }
-      const experiencesData = await experiencesRes.json();
-      setExperiences(experiencesData);
-      // Fetch skills
-      const skillsRes = await fetch(`${API_BASE_URL}/profile/skills`, { headers });
-      if (skillsRes.status === 401) { navigate('/login'); return; }
-      const skillsData = await skillsRes.json();
-      setSkills(skillsData);
-      // Fetch projects
-      const projectsRes = await fetch(`${API_BASE_URL}/profile/projects`, { headers });
-      if (projectsRes.status === 401) { navigate('/login'); return; }
-      const projectsData = await projectsRes.json();
-      setProjects(projectsData);
+      
+      try {
+        // Fetch profile
+        const profileRes = await api.get('/api/profile');
+        setProfile(profileRes.data);
+        
+        // Fetch educations
+        const educationsRes = await api.get('/api/profile/education');
+        setEducations(educationsRes.data);
+        
+        // Fetch experiences
+        const experiencesRes = await api.get('/api/profile/experience');
+        setExperiences(experiencesRes.data);
+        
+        // Fetch skills
+        const skillsRes = await api.get('/api/profile/skills');
+        setSkills(skillsRes.data);
+        
+        // Fetch projects
+        const projectsRes = await api.get('/api/profile/projects');
+        setProjects(projectsRes.data);
+        
+      } catch (apiError) {
+        if (apiError.response && apiError.response.status === 401) {
+          navigate('/login');
+          return;
+        }
+        throw apiError;
+      }
+      
       setLoading(false);
     } catch (err) {
+      console.error('Error fetching profile data:', err);
       setError('Failed to load profile data');
       setLoading(false);
     }
@@ -166,56 +170,33 @@ export default function UserProfileForm() {
   // Education CRUD
   const handleAddEducation = async (data) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/profile/education`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-      if (response.ok) {
-        fetchProfileData();
-        showSnackbar('Education added successfully');
-      }
+      await api.post('/api/profile/education', data);
+      fetchProfileData();
+      showSnackbar('Education added successfully');
     } catch (err) {
+      console.error('Error adding education:', err);
       showSnackbar('Failed to add education', 'error');
     }
   };
 
   const handleUpdateEducation = async (id, data) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/profile/education/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-      if (response.ok) {
-        fetchProfileData();
-        showSnackbar('Education updated successfully');
-      }
+      await api.put(`/api/profile/education/${id}`, data);
+      fetchProfileData();
+      showSnackbar('Education updated successfully');
     } catch (err) {
+      console.error('Error updating education:', err);
       showSnackbar('Failed to update education', 'error');
     }
   };
 
   const handleDeleteEducation = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/profile/education/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        fetchProfileData();
-        showSnackbar('Education deleted successfully');
-      }
+      await api.delete(`/api/profile/education/${id}`);
+      fetchProfileData();
+      showSnackbar('Education deleted successfully');
     } catch (err) {
+      console.error('Error deleting education:', err);
       showSnackbar('Failed to delete education', 'error');
     }
   };
@@ -223,56 +204,33 @@ export default function UserProfileForm() {
   // Experience CRUD
   const handleAddExperience = async (data) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/profile/experience`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-      if (response.ok) {
-        fetchProfileData();
-        showSnackbar('Experience added successfully');
-      }
+      await api.post('/api/profile/experience', data);
+      fetchProfileData();
+      showSnackbar('Experience added successfully');
     } catch (err) {
+      console.error('Error adding experience:', err);
       showSnackbar('Failed to add experience', 'error');
     }
   };
 
   const handleUpdateExperience = async (id, data) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/profile/experience/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-      if (response.ok) {
-        fetchProfileData();
-        showSnackbar('Experience updated successfully');
-      }
+      await api.put(`/api/profile/experience/${id}`, data);
+      fetchProfileData();
+      showSnackbar('Experience updated successfully');
     } catch (err) {
+      console.error('Error updating experience:', err);
       showSnackbar('Failed to update experience', 'error');
     }
   };
 
   const handleDeleteExperience = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/profile/experience/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        fetchProfileData();
-        showSnackbar('Experience deleted successfully');
-      }
+      await api.delete(`/api/profile/experience/${id}`);
+      fetchProfileData();
+      showSnackbar('Experience deleted successfully');
     } catch (err) {
+      console.error('Error deleting experience:', err);
       showSnackbar('Failed to delete experience', 'error');
     }
   };
@@ -280,36 +238,22 @@ export default function UserProfileForm() {
   // Skills CRUD
   const handleAddSkill = async (data) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/profile/skills`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-      if (response.ok) {
-        fetchProfileData();
-        showSnackbar('Skill added successfully');
-      }
+      await api.post('/api/profile/skills', data);
+      fetchProfileData();
+      showSnackbar('Skill added successfully');
     } catch (err) {
+      console.error('Error adding skill:', err);
       showSnackbar('Failed to add skill', 'error');
     }
   };
 
   const handleDeleteSkill = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/profile/skills/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        fetchProfileData();
-        showSnackbar('Skill deleted successfully');
-      }
+      await api.delete(`/api/profile/skills/${id}`);
+      fetchProfileData();
+      showSnackbar('Skill deleted successfully');
     } catch (err) {
+      console.error('Error deleting skill:', err);
       showSnackbar('Failed to delete skill', 'error');
     }
   };
@@ -317,56 +261,33 @@ export default function UserProfileForm() {
   // Projects CRUD
   const handleAddProject = async (data) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/profile/projects`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-      if (response.ok) {
-        fetchProfileData();
-        showSnackbar('Project added successfully');
-      }
+      await api.post('/api/profile/projects', data);
+      fetchProfileData();
+      showSnackbar('Project added successfully');
     } catch (err) {
+      console.error('Error adding project:', err);
       showSnackbar('Failed to add project', 'error');
     }
   };
 
   const handleUpdateProject = async (id, data) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/profile/projects/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-      if (response.ok) {
-        fetchProfileData();
-        showSnackbar('Project updated successfully');
-      }
+      await api.put(`/api/profile/projects/${id}`, data);
+      fetchProfileData();
+      showSnackbar('Project updated successfully');
     } catch (err) {
+      console.error('Error updating project:', err);
       showSnackbar('Failed to update project', 'error');
     }
   };
 
   const handleDeleteProject = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/profile/projects/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        fetchProfileData();
-        showSnackbar('Project deleted successfully');
-      }
+      await api.delete(`/api/profile/projects/${id}`);
+      fetchProfileData();
+      showSnackbar('Project deleted successfully');
     } catch (err) {
+      console.error('Error deleting project:', err);
       showSnackbar('Failed to delete project', 'error');
     }
   };
@@ -378,23 +299,12 @@ export default function UserProfileForm() {
 
   const handleEditProfileSave = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/profile`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(editProfileForm)
-      });
-      if (response.ok) {
-        showSnackbar('Profile updated successfully');
-        setEditProfileDialog(false);
-        fetchProfileData();
-      } else {
-        showSnackbar('Failed to update profile', 'error');
-      }
+      await api.put('/api/profile', editProfileForm);
+      showSnackbar('Profile updated successfully');
+      setEditProfileDialog(false);
+      fetchProfileData();
     } catch (err) {
+      console.error('Error updating profile:', err);
       showSnackbar('Failed to update profile', 'error');
     }
   };
