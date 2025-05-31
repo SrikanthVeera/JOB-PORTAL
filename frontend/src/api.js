@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Use environment variable for API URL or fallback to local development
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Use environment variable for API URL or fallback to the deployed backend
+const API_URL = process.env.REACT_APP_API_URL || 'https://job-portal-1-2qzy.onrender.com';
 console.log('Using API URL:', API_URL);
 
 const api = axios.create({
