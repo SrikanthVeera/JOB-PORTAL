@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Typography, Stack, Dialog, DialogTitle, DialogContent, TextField, Alert, Zoom, Box } from '@mui/material';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import api from '../api';
 
 function Login() {
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ function Login() {
     setError('');
     setSuccess('');
     try {
-      const response = await axios.post('/api/login', {
+      const response = await api.post('/api/login', {
         email,
         password,
       });

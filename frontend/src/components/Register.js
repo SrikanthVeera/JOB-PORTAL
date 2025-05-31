@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, Typography, Container, Stack, Paper, TextField, Alert, Fade } from '@mui/material';
-import axios from 'axios';
+import api from '../api';
 
 // Free 3D illustration from Storyset (job search theme)
 const illustration = 'https://storyset.com/illustration/job-hunt/bro';
@@ -39,7 +39,7 @@ function Register() {
       return;
     }
     try {
-      await axios.post('/api/register', {
+      await api.post('/api/register', {
         email,
         password,
         is_admin: false,
