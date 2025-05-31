@@ -37,12 +37,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuration
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', '8b2e5a5c0e6948882fb53614be8e2581')
+app.config['FLASK_BACKEND_PROJECT'] = os.environ.get('flaskbackendproject', '8b2e5a5c0e6948882fb53614be8e2581')
 
 # Database configuration
 # Check if MySQL credentials are provided in environment variables
 mysql_user = os.environ.get('MYSQL_USER', 'root')
-mysql_password = os.environ.get('MYSQL_PASSWORD', '')
+mysql_password = os.environ.get('MYSQL_PASSWORD', 'TIGER')
 mysql_host = os.environ.get('MYSQL_HOST', 'localhost')
 mysql_port = os.environ.get('MYSQL_PORT', '3306')
 mysql_database = os.environ.get('MYSQL_DATABASE', 'jobportal')
@@ -83,7 +84,7 @@ if database_url.startswith('postgres://'):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key')
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', '8b2e5a5c0e6948882fb53614be8e2581')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30)  # Increased to 30 days for testing
 app.config['JWT_HEADER_TYPE'] = 'Bearer'
 app.config['JWT_HEADER_NAME'] = 'Authorization'
