@@ -11,9 +11,9 @@ import json
 # Initialize Flask app
 app = Flask(__name__, template_folder='templates')
 
-# Enable CORS for all routes
-CORS(app,
-     origins=["https://job-portal-3e7h.vercel.app", "https://job-portal-frontend.onrender.com", "http://localhost:3000"],
+# Enable CORS for Vercel domain only
+CORS(app, 
+     origins=["https://job-portal-3e7h.vercel.app"],
      supports_credentials=True,
      allow_headers=["Content-Type", "Authorization"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -24,16 +24,8 @@ CORS(app,
 def add_cors_headers(response):
     # Only add headers if it's not an OPTIONS preflight request that already has CORS headers
     if request.method != 'OPTIONS' or 'Access-Control-Allow-Origin' not in response.headers:
-        # Check the origin of the request
-        origin = request.headers.get('Origin', '')
-        allowed_origins = ["https://job-portal-3e7h.vercel.app", "https://job-portal-frontend.onrender.com", "http://localhost:3000"]
-        
-        # Set the appropriate CORS headers based on the origin
-        if origin in allowed_origins:
-            response.headers['Access-Control-Allow-Origin'] = origin
-        else:
-            response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
-            
+        # Set the Vercel domain as the allowed origin
+        response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
@@ -450,6 +442,47 @@ def login():
         if not data:
             print("No JSON data received")
             return jsonify({'error': 'No JSON data received'}), 400
+        
+        # Check if this is a Google login
+        if 'googleToken' in data:
+            try:
+                # Verify the Google token (in a production app, you would verify with Google's API)
+                # For this example, we'll just extract the email from the token payload
+                email = data.get('email')
+                if not email:
+                    return jsonify({'error': 'Email is required for Google login'}), 400
+                
+                # Check if user exists
+                user = User.query.filter_by(email=email).first()
+                if not user:
+                    # Create a new user
+                    user = User(
+                        email=email,
+                        password=generate_password_hash('google-login-no-password'),  # Set a placeholder password
+                        is_admin=False,
+                        full_name=data.get('name', ''),
+                        role='user'
+                    )
+                    db.session.add(user)
+                    db.session.commit()
+                
+                # Create identity object for JWT
+                identity = {
+                    'id': user.id,
+                    'is_admin': user.is_admin,
+                    'role': user.role
+                }
+                access_token = create_access_token(identity=identity)
+                
+                return jsonify({
+                    'access_token': access_token,
+                    'is_admin': user.is_admin,
+                    'user_id': user.id,
+                    'message': 'Google login successful'
+                }), 200
+            except Exception as e:
+                print(f"Google login error: {str(e)}")
+                return jsonify({'error': f'Google login failed: {str(e)}'}), 400
             
         if 'email' not in data or 'password' not in data:
             print("Email or password missing")
@@ -620,14 +653,7 @@ def get_jobs():
     # Handle preflight OPTIONS request
     if request.method == 'OPTIONS':
         response = app.make_default_options_response()
-        origin = request.headers.get('Origin', '')
-        allowed_origins = ["https://job-portal-3e7h.vercel.app", "https://job-portal-frontend.onrender.com", "http://localhost:3000"]
-        
-        if origin in allowed_origins:
-            response.headers['Access-Control-Allow-Origin'] = origin
-        else:
-            response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
-            
+        response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
@@ -890,14 +916,7 @@ def get_profile():
     # Handle preflight OPTIONS request
     if request.method == 'OPTIONS':
         response = app.make_default_options_response()
-        origin = request.headers.get('Origin', '')
-        allowed_origins = ["https://job-portal-3e7h.vercel.app", "https://job-portal-frontend.onrender.com", "http://localhost:3000"]
-        
-        if origin in allowed_origins:
-            response.headers['Access-Control-Allow-Origin'] = origin
-        else:
-            response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
-            
+        response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
@@ -964,14 +983,7 @@ def update_profile():
     # Handle preflight OPTIONS request
     if request.method == 'OPTIONS':
         response = app.make_default_options_response()
-        origin = request.headers.get('Origin', '')
-        allowed_origins = ["https://job-portal-3e7h.vercel.app", "https://job-portal-frontend.onrender.com", "http://localhost:3000"]
-        
-        if origin in allowed_origins:
-            response.headers['Access-Control-Allow-Origin'] = origin
-        else:
-            response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
-            
+        response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
