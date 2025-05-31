@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1 { color: #333; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; overflow: auto; }
+        button { padding: 10px 15px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #45a049; }
+        input { padding: 8px; margin: 5px 0; width: 300px; }
+        .container { max-width: 800px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Login Test Page</h1>
+        <p>Use this page to test login functionality and JWT token handling.</p>
+
+        <div>
+            <h2>Login</h2>
+            <div>
+                <input type="email" id="email" placeholder="Email" value="srikanthveera160@gmail.com"><br>
+                <input type="password" id="password" placeholder="Password" value="Srikanth@123"><br>
+                <button onclick="login()">Login</button>
+            </div>
+            <div id="login-result"></div>
+        </div>
+
+        <div>
+            <h2>Test Token</h2>
+            <button onclick="testToken()">Test Token</button>
+            <div id="token-test-result"></div>
+        </div>
+
+        <div>
+            <h2>Get Profile</h2>
+            <button onclick="getProfile()">Get Profile</button>
+            <div id="profile-result"></div>
+        </div>
+
+        <div>
+            <h2>Debug Profile (No Auth Required)</h2>
+            <button onclick="debugProfile()">Debug Profile</button>
+            <div id="debug-result"></div>
+        </div>
+
+        <div>
+            <h2>Clear Token</h2>
+            <button onclick="clearToken()">Clear Token</button>
+        </div>
+    </div>
+
+    <script>
+        // Store token in localStorage
+        let token = localStorage.getItem('token');
+        
+        function updateTokenDisplay() {
+            const tokenDisplay = document.getElementById('token-display');
+            if (tokenDisplay) {
+                if (token) {
+                    tokenDisplay.textContent = `Token: ${token.substring(0, 20)}...`;
+                    tokenDisplay.className = 'success';
+                } else {
+                    tokenDisplay.textContent = 'No token stored';
+                    tokenDisplay.className = 'error';
+                }
+            }
+        }
+        
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('login-result');
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    token = data.access_token;
+                    localStorage.setItem('token', token);
+                    resultDiv.innerHTML = `<p class="success">Login successful!</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">Login failed: ${data.error || 'Unknown error'}</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+            
+            updateTokenDisplay();
+        }
+        
+        async function testToken() {
+            const resultDiv = document.getElementById('token-test-result');
+            
+            if (!token) {
+                resultDiv.innerHTML = '<p class="error">No token available. Please login first.</p>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/token-test', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<p class="success">Token test successful!</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">Token test failed: ${data.message || 'Unknown error'}</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function getProfile() {
+            const resultDiv = document.getElementById('profile-result');
+            
+            if (!token) {
+                resultDiv.innerHTML = '<p class="error">No token available. Please login first.</p>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<p class="success">Profile retrieved successfully!</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">Failed to get profile: ${data.error || 'Unknown error'}</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function debugProfile() {
+            const resultDiv = document.getElementById('debug-result');
+            
+            try {
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('/api/debug-profile', {
+                    headers: headers
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<p class="success">Debug profile successful!</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">Debug profile failed: ${data.error || 'Unknown error'}</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        function clearToken() {
+            localStorage.removeItem('token');
+            token = null;
+            alert('Token cleared from localStorage');
+            updateTokenDisplay();
+        }
+        
+        // Initialize
+        updateTokenDisplay();
+    </script>
+</body>
+</html>

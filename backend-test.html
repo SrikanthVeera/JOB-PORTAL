@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            min-height: 200px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Backend API Test</h1>
+    
+    <div>
+        <label for="apiUrl">API URL:</label>
+        <input type="text" id="apiUrl" value="https://web-production-2bf0.up.railway.app" style="width: 350px;">
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <button onclick="testEndpoint('/')">Test Root Endpoint</button>
+        <button onclick="testEndpoint('/test')">Test /test Endpoint</button>
+        <button onclick="testEndpoint('/api/jobs')">Test /api/jobs Endpoint</button>
+        <button onclick="testEndpoint('/api/companies')">Test /api/companies Endpoint</button>
+    </div>
+    
+    <div id="results">
+        <p>Results will appear here...</p>
+    </div>
+    
+    <script>
+        async function testEndpoint(endpoint) {
+            const resultsDiv = document.getElementById('results');
+            const baseUrl = document.getElementById('apiUrl').value.trim();
+            
+            if (!baseUrl) {
+                resultsDiv.innerHTML = '<p class="error">Please enter an API URL</p>';
+                return;
+            }
+            
+            const url = `${baseUrl}${endpoint}`;
+            resultsDiv.innerHTML = `<p>Testing: ${url}</p><p>Please wait...</p>`;
+            
+            try {
+                const startTime = new Date().getTime();
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                const endTime = new Date().getTime();
+                const timeElapsed = endTime - startTime;
+                
+                let responseText;
+                try {
+                    responseText = await response.text();
+                } catch (e) {
+                    responseText = 'Could not read response text';
+                }
+                
+                let responseJson;
+                try {
+                    responseJson = JSON.parse(responseText);
+                    responseText = JSON.stringify(responseJson, null, 2);
+                } catch (e) {
+                    // Not JSON, keep as text
+                }
+                
+                if (response.ok) {
+                    resultsDiv.innerHTML = `
+                        <p class="success">✅ Success! (${timeElapsed}ms)</p>
+                        <p>Status: ${response.status} ${response.statusText}</p>
+                        <p>Response:</p>
+                        <pre>${responseText}</pre>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <p class="error">❌ Error! (${timeElapsed}ms)</p>
+                        <p>Status: ${response.status} ${response.statusText}</p>
+                        <p>Response:</p>
+                        <pre>${responseText}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <p class="error">❌ Connection Error!</p>
+                    <p>Error: ${error.message}</p>
+                    <p>This could mean:</p>
+                    <ul>
+                        <li>The server is not running</li>
+                        <li>The URL is incorrect</li>
+                        <li>CORS is not properly configured on the server</li>
+                        <li>There's a network issue</li>
+                    </ul>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
