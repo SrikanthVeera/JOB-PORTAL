@@ -434,6 +434,17 @@ def register():
     
     return jsonify({'message': 'User registered successfully'}), 201
 
+# Hardcoded user credentials - will work even if database is unavailable
+HARDCODED_USER = {
+    'email': 'test@example.com',
+    'password': 'password123',  # This is the plain text password
+    'password_hash': generate_password_hash('password123'),  # This is the hashed password
+    'is_admin': False,
+    'full_name': 'Test User',
+    'role': 'user',
+    'id': 9999  # Use a high ID number to avoid conflicts with database IDs
+}
+
 @app.route('/api/login', methods=['POST'])
 def login():
     try:
@@ -443,6 +454,25 @@ def login():
         if not data:
             print("No JSON data received")
             return jsonify({'error': 'No JSON data received'}), 400
+            
+        # Check for hardcoded user login
+        if data.get('email') == HARDCODED_USER['email'] and data.get('password'):
+            if check_password_hash(HARDCODED_USER['password_hash'], data['password']):
+                print("Hardcoded user login successful")
+                # Create identity object for JWT
+                identity = {
+                    'id': HARDCODED_USER['id'],
+                    'is_admin': HARDCODED_USER['is_admin'],
+                    'role': HARDCODED_USER['role']
+                }
+                access_token = create_access_token(identity=identity)
+                
+                return jsonify({
+                    'access_token': access_token,
+                    'is_admin': HARDCODED_USER['is_admin'],
+                    'user_id': HARDCODED_USER['id'],
+                    'message': 'Hardcoded user login successful'
+                }), 200
         
         # Check if this is a Google login
         if 'googleToken' in data:
@@ -950,6 +980,22 @@ def get_profile():
                 print(f"Invalid user identity format: {current_user}")
                 return jsonify({'error': 'Invalid user identity format'}), 400
             
+            # Check if this is the hardcoded user
+            if current_user['id'] == HARDCODED_USER['id']:
+                print(f"Profile request for hardcoded user")
+                response = jsonify({
+                    'id': HARDCODED_USER['id'],
+                    'email': HARDCODED_USER['email'],
+                    'full_name': HARDCODED_USER['full_name'],
+                    'phone': 'N/A',
+                    'location': 'N/A',
+                    'is_admin': HARDCODED_USER['is_admin'],
+                    'role': HARDCODED_USER['role'],
+                    'resume_headline': 'Hardcoded Test User'
+                })
+                return response
+            
+            # Regular database user
             user = User.query.get(current_user['id'])
             if not user:
                 print(f"User not found with ID: {current_user['id']}")
@@ -1006,6 +1052,13 @@ def update_profile():
         verify_jwt_in_request()
         current_user = get_jwt_identity()
         
+        # Check if this is the hardcoded user
+        if current_user['id'] == HARDCODED_USER['id']:
+            print(f"Profile update for hardcoded user - changes will not be saved")
+            # For hardcoded user, we pretend to update but don't actually change anything
+            return jsonify({'message': 'Profile updated successfully (Note: Changes to test user are not permanent)'})
+        
+        # Regular database user
         user = User.query.get(current_user['id'])
         if not user:
             return jsonify({'error': 'User not found'}), 404
