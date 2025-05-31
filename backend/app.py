@@ -11,9 +11,9 @@ import json
 # Initialize Flask app
 app = Flask(__name__, template_folder='templates')
 
-# Enable CORS for Vercel domain only
+# Enable CORS for Vercel domain and localhost
 CORS(app, 
-     origins=["https://job-portal-3e7h.vercel.app"],
+     origins=["https://job-portal-3e7h.vercel.app", "http://localhost:3000"],
      supports_credentials=True,
      allow_headers=["Content-Type", "Authorization"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -24,8 +24,16 @@ CORS(app,
 def add_cors_headers(response):
     # Only add headers if it's not an OPTIONS preflight request that already has CORS headers
     if request.method != 'OPTIONS' or 'Access-Control-Allow-Origin' not in response.headers:
-        # Set the Vercel domain as the allowed origin
-        response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
+        # Check the origin of the request
+        origin = request.headers.get('Origin', '')
+        allowed_origins = ["https://job-portal-3e7h.vercel.app", "http://localhost:3000"]
+        
+        # Set the appropriate CORS headers based on the origin
+        if origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+        else:
+            response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
+            
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
@@ -684,7 +692,14 @@ def get_jobs():
     # Handle preflight OPTIONS request
     if request.method == 'OPTIONS':
         response = app.make_default_options_response()
-        response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
+        origin = request.headers.get('Origin', '')
+        allowed_origins = ["https://job-portal-3e7h.vercel.app", "http://localhost:3000"]
+        
+        if origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+        else:
+            response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
+            
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
@@ -947,7 +962,14 @@ def get_profile():
     # Handle preflight OPTIONS request
     if request.method == 'OPTIONS':
         response = app.make_default_options_response()
-        response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
+        origin = request.headers.get('Origin', '')
+        allowed_origins = ["https://job-portal-3e7h.vercel.app", "http://localhost:3000"]
+        
+        if origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+        else:
+            response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
+            
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
@@ -1030,7 +1052,14 @@ def update_profile():
     # Handle preflight OPTIONS request
     if request.method == 'OPTIONS':
         response = app.make_default_options_response()
-        response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
+        origin = request.headers.get('Origin', '')
+        allowed_origins = ["https://job-portal-3e7h.vercel.app", "http://localhost:3000"]
+        
+        if origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+        else:
+            response.headers['Access-Control-Allow-Origin'] = 'https://job-portal-3e7h.vercel.app'
+            
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
