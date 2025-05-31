@@ -12,7 +12,7 @@ import json
 app = Flask(__name__, template_folder='templates')
 
 # Enable CORS for all routes
-CORS(app, 
+CORS(app,
      origins=["https://job-portal-frontend.onrender.com", "http://localhost:3000"],
      supports_credentials=True,
      allow_headers=["Content-Type", "Authorization"],
